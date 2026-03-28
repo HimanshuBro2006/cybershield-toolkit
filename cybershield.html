@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberShield — Security Toolkit</title>
+<style>
+:root {
+  --bg:       #070b14;
+  --surf-1:   #0d1424;
+  --surf-2:   #131e30;
+  --surf-3:   #1a2840;
+  --border:   #1e3a5f;
+  --border-2: #2a4a72;
+  --cyan:     #00d4ff;
+  --cyan-dim: rgba(0,212,255,.12);
+  --purple:   #7b2fff;
+  --purple-dim:rgba(123,47,255,.12);
+  --green:    #00ff88;
+  --green-dim:rgba(0,255,136,.1);
+  --amber:    #ffaa00;
+  --amber-dim:rgba(255,170,0,.12);
+  --red:      #ff3b5c;
+  --red-dim:  rgba(255,59,92,.12);
+  --text:     #c8dff0;
+  --text-2:   #6a90b0;
+  --text-3:   #3a5570;
+  --mono:     'JetBrains Mono','Fira Code','Consolas',monospace;
+  --ui:       -apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;
+  --r-sm:4px; --r-md:8px; --r-lg:12px;
+  --sidebar-w:220px;
+  --t-fast:120ms ease; --t-norm:220ms ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--ui);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px}
+button{font-family:var(--ui);font-size:13px;cursor:pointer;border:none;outline:none;background:none;color:inherit}
+button:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+input,textarea,select{font-family:var(--ui);font-size:13px;background:var(--surf-3);border:1px solid var(--border);border-radius:var(--r-md);color:var(--text);padding:8px 12px;width:100%;transition:border-color var(--t-fast)}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--cyan)}
+textarea{resize:vertical;min-height:100px}
+label{font-size:12px;font-weight:600;color:var(--text-2);letter-spacing:.04em;text-transform:uppercase;display:block;margin-bottom:5px}
+
+/* ── Layout ── */
+#app{display:flex;height:100vh;overflow:hidden}
+#sidebar{
+  width:var(--sidebar-w);min-width:var(--sidebar-w);
+  background:var(--surf-1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+  position:relative;z-index:10;
+}
+#sidebar::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 24px,rgba(0,212,255,.015) 25px);
+  pointer-events:none;
+}
+.sidebar-logo{
+  padding:18px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.logo-shield{font-size:22px;filter:drop-shadow(0 0 8px var(--cyan))}
+.logo-text{font-size:16px;font-weight:700;color:var(--cyan);letter-spacing:.05em;text-shadow:0 0 20px var(--cyan)}
+.logo-sub{font-size:10px;color:var(--text-3);letter-spacing:.1em;text-transform:uppercase;margin-top:1px}
+.nav{flex:1;padding:8px 0;overflow-y:auto}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 16px;cursor:pointer;
+  border-left:3px solid transparent;
+  transition:background var(--t-fast),border-color var(--t-fast),color var(--t-fast);
+  color:var(--text-2);font-size:13px;font-weight:500;
+  position:relative;
+}
+.nav-item:hover{background:var(--surf-2);color:var(--text)}
+.nav-item.active{background:var(--cyan-dim);border-left-color:var(--cyan);color:var(--cyan)}
+.nav-icon{font-size:16px;width:20px;text-align:center}
+.nav-badge{
+  margin-left:auto;font-size:10px;font-family:var(--mono);
+  background:var(--surf-3);color:var(--text-3);
+  padding:1px 6px;border-radius:999px;border:1px solid var(--border);
+}
+.nav-item.active .nav-badge{background:var(--cyan-dim);color:var(--cyan);border-color:rgba(0,212,255,.3)}
+.sidebar-footer{padding:12px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text-3)}
+
+#content{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.page{display:none;flex-direction:column;gap:20px;padding:24px;min-height:100%}
+.page.active{display:flex}
+
+/* ── Page header ── */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.page-title{font-size:20px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:10px}
+.page-title .icon{font-size:22px}
+.page-desc{font-size:13px;color:var(--text-2);margin-top:3px;max-width:520px}
+
+/* ── Cards ── */
+.card{background:var(--surf-1);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.card-title{font-size:13px;font-weight:600;color:var(--text);letter-spacing:.03em}
+.card-body{padding:18px}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:var(--r-md);
+  font-size:13px;font-weight:600;
+  border:1px solid var(--border);background:var(--surf-2);
+  color:var(--text-2);transition:all var(--t-fast);white-space:nowrap;
+}
+.btn:hover:not(:disabled){background:var(--surf-3);color:var(--text);border-color:var(--border-2)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:var(--cyan-dim);color:var(--cyan);border-color:rgba(0,212,255,.3)}
+.btn-primary:hover:not(:disabled){background:rgba(0,212,255,.2);border-color:var(--cyan)}
+.btn-danger{background:var(--red-dim);color:var(--red);border-color:rgba(255,59,92,.3)}
+.btn-danger:hover:not(:disabled){background:rgba(255,59,92,.2)}
+.btn-success{background:var(--green-dim);color:var(--green);border-color:rgba(0,255,136,.3)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-icon{padding:6px;border-radius:var(--r-sm)}
+
+/* ── Form groups ── */
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.input-group{display:flex;gap:6px}
+.input-group input{flex:1}
+
+/* ── Grid ── */
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+
+/* ── Stat card ── */
+.stat-card{
+  background:var(--surf-1);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:16px;
+  display:flex;flex-direction:column;gap:4px;
+  position:relative;overflow:hidden;
+  transition:border-color var(--t-norm);
+}
+.stat-card:hover{border-color:var(--border-2)}
+.stat-card::before{
+  content:'';position:absolute;inset:0;
+  opacity:0;transition:opacity var(--t-norm);
+  border-radius:var(--r-lg);
+}
+.stat-card.cyan::before{background:radial-gradient(circle at 0 0,var(--cyan-dim),transparent 60%)}
+.stat-card.purple::before{background:radial-gradient(circle at 0 0,var(--purple-dim),transparent 60%)}
+.stat-card.green::before{background:radial-gradient(circle at 0 0,var(--green-dim),transparent 60%)}
+.stat-card.amber::before{background:radial-gradient(circle at 0 0,var(--amber-dim),transparent 60%)}
+.stat-card:hover::before{opacity:1}
+.stat-icon{font-size:22px;margin-bottom:4px}
+.stat-value{font-size:26px;font-weight:700;font-family:var(--mono);color:var(--text)}
+.stat-label{font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em}
+.stat-card.cyan .stat-value{color:var(--cyan)}
+.stat-card.purple .stat-value{color:var(--purple)}
+.stat-card.green .stat-value{color:var(--green)}
+.stat-card.amber .stat-value{color:var(--amber)}
+
+/* ── Tool grid (dashboard) ── */
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.tool-card{
+  background:var(--surf-1);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:16px;cursor:pointer;
+  display:flex;flex-direction:column;gap:8px;
+  transition:all var(--t-norm);
+}
+.tool-card:hover{background:var(--surf-2);border-color:var(--border-2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.tool-card-icon{font-size:28px}
+.tool-card-name{font-size:13px;font-weight:600;color:var(--text)}
+.tool-card-desc{font-size:12px;color:var(--text-3);line-height:1.5}
+
+/* ── Risk score ── */
+.risk-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:999px;font-family:var(--mono);
+  font-size:13px;font-weight:700;
+}
+.risk-low   {background:var(--green-dim);color:var(--green);border:1px solid rgba(0,255,136,.3)}
+.risk-medium{background:var(--amber-dim);color:var(--amber);border:1px solid rgba(255,170,0,.3)}
+.risk-high  {background:var(--red-dim);  color:var(--red);  border:1px solid rgba(255,59,92,.3)}
+.risk-critical{background:rgba(255,0,60,.2);color:#ff0040;border:1px solid rgba(255,0,60,.5);
+  box-shadow:0 0 12px rgba(255,0,60,.2),inset 0 0 12px rgba(255,0,60,.1)}
+
+/* ── Risk meter ── */
+.risk-meter{width:100%;height:8px;background:var(--surf-3);border-radius:4px;overflow:hidden;margin:4px 0}
+.risk-meter-fill{height:100%;border-radius:4px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+/* ── Indicator list ── */
+.indicator-list{display:flex;flex-direction:column;gap:8px}
+.indicator-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 12px;background:var(--surf-2);
+  border-radius:var(--r-md);border-left:3px solid var(--border);
+  font-size:13px;
+}
+.indicator-item.red   {border-left-color:var(--red)}
+.indicator-item.amber {border-left-color:var(--amber)}
+.indicator-item.green {border-left-color:var(--green)}
+.indicator-icon{font-size:15px;margin-top:1px;flex-shrink:0}
+.indicator-text{color:var(--text-2);line-height:1.5}
+
+/* ── Password strength ── */
+.strength-bar{display:flex;gap:3px;margin:6px 0}
+.strength-seg{height:4px;flex:1;border-radius:2px;background:var(--surf-3);transition:background .3s}
+.pw-score-0 .strength-seg:nth-child(-n+1){background:var(--red)}
+.pw-score-1 .strength-seg:nth-child(-n+2){background:var(--red)}
+.pw-score-2 .strength-seg:nth-child(-n+3){background:var(--amber)}
+.pw-score-3 .strength-seg:nth-child(-n+4){background:var(--cyan)}
+.pw-score-4 .strength-seg:nth-child(-n+5){background:var(--green)}
+.strength-label{font-size:11px;color:var(--text-3);font-family:var(--mono)}
+
+/* ── Vault ── */
+.vault-entry{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;background:var(--surf-2);
+  border:1px solid var(--border);border-radius:var(--r-md);
+  transition:border-color var(--t-fast);
+}
+.vault-entry:hover{border-color:var(--border-2)}
+.vault-icon{
+  width:36px;height:36px;border-radius:var(--r-sm);
+  background:var(--surf-3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+}
+.vault-info{flex:1;min-width:0}
+.vault-title{font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vault-username{font-size:12px;color:var(--text-3);font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vault-actions{display:flex;gap:4px;flex-shrink:0}
+
+/* ── Hash output ── */
+.hash-row{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;background:var(--surf-2);
+  border:1px solid var(--border);border-radius:var(--r-md);
+}
+.hash-algo{font-size:11px;font-weight:700;color:var(--cyan);font-family:var(--mono);
+  min-width:60px;text-transform:uppercase}
+.hash-val{flex:1;font-family:var(--mono);font-size:12px;color:var(--text-2);
+  word-break:break-all;letter-spacing:.04em}
+
+/* ── Recon result ── */
+.recon-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.recon-item{
+  padding:12px;background:var(--surf-2);border:1px solid var(--border);
+  border-radius:var(--r-md);
+}
+.recon-key{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:4px}
+.recon-val{font-family:var(--mono);font-size:13px;color:var(--text);word-break:break-all}
+
+/* ── Breach result ── */
+.breach-card{
+  padding:14px;border-radius:var(--r-md);border:1px solid;
+  display:flex;flex-direction:column;gap:6px;
+}
+.breach-card.safe  {background:var(--green-dim);border-color:rgba(0,255,136,.3)}
+.breach-card.pwned {background:var(--red-dim);  border-color:rgba(255,59,92,.3)}
+.breach-title{font-size:15px;font-weight:700}
+.breach-card.safe  .breach-title{color:var(--green)}
+.breach-card.pwned .breach-title{color:var(--red)}
+.breach-list{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.breach-item{
+  font-size:12px;padding:6px 10px;background:rgba(0,0,0,.2);
+  border-radius:var(--r-sm);color:var(--text-2);display:flex;justify-content:space-between;
+}
+.breach-item-name{font-weight:600;color:var(--text)}
+.breach-date{color:var(--text-3);font-family:var(--mono)}
+
+/* ── Lock screen ── */
+.lock-screen{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:20px;padding:48px 24px;text-align:center;
+}
+.lock-icon{font-size:56px;filter:drop-shadow(0 0 16px var(--cyan))}
+.lock-title{font-size:18px;font-weight:700;color:var(--text)}
+.lock-sub{font-size:13px;color:var(--text-2);max-width:320px;line-height:1.6}
+.lock-form{width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px}
+
+/* ── Gen options ── */
+.gen-options{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.gen-option{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--border);background:var(--surf-2);
+  cursor:pointer;font-size:12px;color:var(--text-2);
+  transition:all var(--t-fast);user-select:none;
+}
+.gen-option.active{background:var(--cyan-dim);color:var(--cyan);border-color:rgba(0,212,255,.3)}
+.gen-option input[type=checkbox]{display:none}
+
+/* ── Modal ── */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1000;opacity:0;pointer-events:none;transition:opacity var(--t-norm);
+  backdrop-filter:blur(4px);
+}
+.modal-bg.open{opacity:1;pointer-events:auto}
+.modal{
+  background:var(--surf-1);border:1px solid var(--border-2);
+  border-radius:var(--r-lg);padding:24px;
+  width:100%;max-width:480px;max-height:90vh;overflow-y:auto;
+  display:flex;flex-direction:column;gap:16px;
+  box-shadow:0 24px 64px rgba(0,0,0,.6);
+  transform:translateY(8px);transition:transform var(--t-norm);
+}
+.modal-bg.open .modal{transform:translateY(0)}
+.modal-header{display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:700;color:var(--text)}
+.modal-close{font-size:18px;color:var(--text-3);padding:4px;cursor:pointer;transition:color var(--t-fast)}
+.modal-close:hover{color:var(--text)}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;padding-top:4px;border-top:1px solid var(--border)}
+
+/* ── Toast ── */
+#toast-wrap{position:fixed;top:16px;right:16px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{
+  display:flex;align-items:center;gap:8px;padding:10px 14px;
+  border-radius:var(--r-md);font-size:13px;font-weight:500;
+  box-shadow:0 4px 16px rgba(0,0,0,.4);pointer-events:auto;
+  animation:toastIn .25s ease both;max-width:320px;
+}
+.toast.success{background:#0a2018;color:var(--green);border:1px solid rgba(0,255,136,.25)}
+.toast.error  {background:#200a10;color:var(--red);  border:1px solid rgba(255,59,92,.25)}
+.toast.info   {background:#091826;color:var(--cyan); border:1px solid rgba(0,212,255,.25)}
+.toast.warn   {background:#1e1500;color:var(--amber);border:1px solid rgba(255,170,0,.25)}
+.toast.out    {animation:toastOut .25s ease forwards}
+@keyframes toastIn {from{opacity:0;transform:translateX(100%)} to{opacity:1;transform:translateX(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateX(100%)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)}}
+@keyframes scan{
+  0%{transform:translateY(-100%)}
+  100%{transform:translateY(100vh)}
+}
+
+/* ── Utility ── */
+.text-cyan  {color:var(--cyan)}
+.text-green {color:var(--green)}
+.text-red   {color:var(--red)}
+.text-amber {color:var(--amber)}
+.text-muted {color:var(--text-3)}
+.mono       {font-family:var(--mono)}
+.loading-spin{animation:spin .8s linear infinite;display:inline-block}
+.hidden{display:none!important}
+.divider{border:none;border-top:1px solid var(--border);margin:4px 0}
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:10px}
+.copy-btn{font-size:11px;padding:3px 8px;border-radius:var(--r-sm)}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  :root{--sidebar-w:60px}
+  .logo-text,.logo-sub,.nav-label,.nav-badge,.sidebar-footer{display:none}
+  .sidebar-logo{justify-content:center;padding:14px}
+  .nav-item{justify-content:center;padding:12px}
+  .nav-icon{width:auto;font-size:18px}
+  .page{padding:14px}
+  .grid-2,.grid-3,.grid-4,.form-row{grid-template-columns:1fr}
+  .tool-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-shield">🛡️</span>
+      <div>
+        <div class="logo-text">CyberShield</div>
+        <div class="logo-sub">Security Toolkit</div>
+      </div>
+    </div>
+    <div class="nav">
+      <div class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">⊞</span>
+        <span class="nav-label">Dashboard</span>
+      </div>
+      <div class="nav-item" data-page="phishing">
+        <span class="nav-icon">🎣</span>
+        <span class="nav-label">Phishing Analyser</span>
+        <span class="nav-badge" id="badge-phishing">0</span>
+      </div>
+      <div class="nav-item" data-page="passwords">
+        <span class="nav-icon">🔐</span>
+        <span class="nav-label">Password Vault</span>
+        <span class="nav-badge" id="badge-passwords">0</span>
+      </div>
+      <div class="nav-item" data-page="recon">
+        <span class="nav-icon">🌐</span>
+        <span class="nav-label">IP/Domain Recon</span>
+        <span class="nav-badge" id="badge-recon">0</span>
+      </div>
+      <div class="nav-item" data-page="breach">
+        <span class="nav-icon">💀</span>
+        <span class="nav-label">Breach Checker</span>
+        <span class="nav-badge" id="badge-breach">0</span>
+      </div>
+      <div class="nav-item" data-page="hashes">
+        <span class="nav-icon">#</span>
+        <span class="nav-label">Hash Generator</span>
+        <span class="nav-badge" id="badge-hashes">0</span>
+      </div>
+    </div>
+    <div class="sidebar-footer">v1.0 · Local only</div>
+  </nav>
+
+  <!-- Content -->
+  <main id="content">
+
+    <!-- ══ DASHBOARD ══ -->
+    <section class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title"><span class="icon">⊞</span>Security Dashboard</div>
+          <div class="page-desc">Your personal cybersecurity command centre. All tools, all local, all private.</div>
+        </div>
+      </div>
+
+      <div class="grid-4" id="stat-grid">
+        <div class="stat-card cyan">
+          <div class="stat-icon">🎣</div>
+          <div class="stat-value" id="stat-phishing">0</div>
+          <div class="stat-label">Emails Analysed</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-icon">🔐</div>
+          <div class="stat-value" id="stat-passwords">0</div>
+          <div class="stat-label">Vault Entries</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">🌐</div>
+          <div class="stat-value" id="stat-recon">0</div>
+          <div class="stat-label">Recon Lookups</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-icon">💀</div>
+          <div class="stat-value" id="stat-breach">0</div>
+          <div class="stat-label">Breach Checks</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">🚀 Tools</span></div>
+        <div class="card-body">
+          <div class="tool-grid">
+            <div class="tool-card" onclick="Router.go('phishing')">
+              <div class="tool-card-icon">🎣</div>
+              <div class="tool-card-name">Phishing Analyser</div>
+              <div class="tool-card-desc">AI-powered email threat detection with risk scoring</div>
+            </div>
+            <div class="tool-card" onclick="Router.go('passwords')">
+              <div class="tool-card-icon">🔐</div>
+              <div class="tool-card-name">Password Vault</div>
+              <div class="tool-card-desc">AES-256 encrypted credential storage + generator</div>
+            </div>
+            <div class="tool-card" onclick="Router.go('recon')">
+              <div class="tool-card-icon">🌐</div>
+              <div class="tool-card-name">IP/Domain Recon</div>
+              <div class="tool-card-desc">Geo-location, ISP, and network intelligence</div>
+            </div>
+            <div class="tool-card" onclick="Router.go('breach')">
+              <div class="tool-card-icon">💀</div>
+              <div class="tool-card-name">Breach Checker</div>
+              <div class="tool-card-desc">Check passwords & emails against known breaches</div>
+            </div>
+            <div class="tool-card" onclick="Router.go('hashes')">
+              <div class="tool-card-icon">#</div>
+              <div class="tool-card-name">Hash Generator</div>
+              <div class="tool-card-desc">MD5, SHA-1, SHA-256, SHA-512 in one click</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ PHISHING ANALYSER ══ -->
+    <section class="page" id="page-phishing">
+      <div class="page-header">
+        <div>
+          <div class="page-title"><span class="icon">🎣</span>Phishing Analyser</div>
+          <div class="page-desc">Paste any suspicious email. AI analyses it for phishing indicators and assigns a risk score.</div>
+        </div>
+        <button class="btn btn-sm" onclick="PhishingTool.clear()">✕ Clear</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">📧 Email Content</span></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+          <div class="form-group">
+            <label>Paste full email (headers + body)</label>
+            <textarea id="phish-input" rows="10" placeholder="Paste email content here…&#10;&#10;From: suspicious@example.com&#10;Subject: URGENT: Verify your account&#10;&#10;Dear user, click here immediately…"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary" id="phish-btn" onclick="PhishingTool.analyse()">
+              🔍 Analyse Email
+            </button>
+            <button class="btn btn-sm" onclick="PhishingTool.loadSample()">📋 Load Sample</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="phish-result" class="hidden" style="display:flex;flex-direction:column;gap:16px;animation:fadeUp .3s ease">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">⚠️ Risk Assessment</span>
+            <span id="phish-risk-badge" class="risk-badge" style="margin-left:auto"></span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:12px;color:var(--text-3)">Risk Score</span>
+                <span id="phish-score-label" class="mono" style="font-size:12px"></span>
+              </div>
+              <div class="risk-meter"><div id="phish-meter" class="risk-meter-fill"></div></div>
+            </div>
+            <p id="phish-explanation" style="font-size:13px;color:var(--text-2);line-height:1.65"></p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">🚩 Phishing Indicators</span></div>
+          <div class="card-body">
+            <div id="phish-indicators" class="indicator-list"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">✅ Recommendations</span></div>
+          <div class="card-body">
+            <div id="phish-recommendations" class="indicator-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ PASSWORD VAULT ══ -->
+    <section class="page" id="page-passwords">
+      <div class="page-header">
+        <div>
+          <div class="page-title"><span class="icon">🔐</span>Password Vault</div>
+          <div class="page-desc">AES-256-GCM encrypted. Master password never stored — derived key held in memory only.</div>
+        </div>
+      </div>
+
+      <!-- Lock screen -->
+      <div id="vault-lock" class="card">
+        <div class="card-body">
+          <div class="lock-screen">
+            <div class="lock-icon" id="vault-lock-icon">🔒</div>
+            <div class="lock-title" id="vault-lock-title">Unlock Vault</div>
+            <div class="lock-sub" id="vault-lock-sub">Enter your master password to access your encrypted vault. First-time setup creates a new vault.</div>
+            <div class="lock-form">
+              <input type="password" id="vault-master-pw" placeholder="Master password…" onkeydown="if(event.key==='Enter')Vault.unlock()">
+              <div id="vault-setup-confirm" class="hidden">
+                <input type="password" id="vault-master-pw2" placeholder="Confirm master password…" onkeydown="if(event.key==='Enter')Vault.unlock()">
+              </div>
+              <button class="btn btn-primary" onclick="Vault.unlock()" id="vault-unlock-btn">🔓 Unlock / Create Vault</button>
+              <div id="vault-lock-error" class="hidden" style="color:var(--red);font-size:12px;text-align:center"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vault contents (shown when unlocked) -->
+      <div id="vault-open" class="hidden" style="display:flex;flex-direction:column;gap:16px">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">🔑 Vault Entries</span>
+            <div style="margin-left:auto;display:flex;gap:6px">
+              <input type="search" id="vault-search" placeholder="Search…" style="width:180px;padding:4px 10px;font-size:12px" oninput="Vault.renderEntries()">
+              <button class="btn btn-primary btn-sm" onclick="VaultModal.openAdd()">+ Add</button>
+              <button class="btn btn-danger btn-sm" onclick="Vault.lock()">🔒 Lock</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="vault-entries" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+        </div>
+
+        <!-- Password Generator -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">⚙️ Password Generator</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+            <div class="form-group">
+              <label>Length: <span id="gen-len-label">16</span></label>
+              <input type="range" id="gen-length" min="6" max="64" value="16" oninput="PasswordGen.update()" style="background:none;border:none;padding:4px 0;cursor:pointer;accent-color:var(--cyan)">
+            </div>
+            <div class="gen-options">
+              <label class="gen-option active" onclick="PasswordGen.toggle(this)">
+                <input type="checkbox" name="upper" checked> ABC Uppercase
+              </label>
+              <label class="gen-option active" onclick="PasswordGen.toggle(this)">
+                <input type="checkbox" name="lower" checked> abc Lowercase
+              </label>
+              <label class="gen-option active" onclick="PasswordGen.toggle(this)">
+                <input type="checkbox" name="nums" checked> 123 Numbers
+              </label>
+              <label class="gen-option active" onclick="PasswordGen.toggle(this)">
+                <input type="checkbox" name="syms" checked> !@# Symbols
+              </label>
+            </div>
+            <div class="input-group">
+              <input type="text" id="gen-output" readonly placeholder="Click Generate…" class="mono" style="font-size:13px">
+              <button class="btn btn-sm" onclick="PasswordGen.copy()">📋</button>
+            </div>
+            <div id="gen-strength-wrap" style="display:flex;flex-direction:column;gap:2px">
+              <div class="strength-bar" id="gen-strength-bar">
+                <div class="strength-seg"></div><div class="strength-seg"></div>
+                <div class="strength-seg"></div><div class="strength-seg"></div>
+                <div class="strength-seg"></div>
+              </div>
+              <span id="gen-strength-label" class="strength-label"></span>
+            </div>
+            <button class="btn btn-primary" onclick="PasswordGen.generate()">⚡ Generate Password</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ IP/DOMAIN RECON ══ -->
+    <section class="page" id="page-recon">
+      <div class="page-header">
+        <div>
+          <div class="page-title"><span class="icon">🌐</span>IP / Domain Recon</div>
+          <div class="page-desc">Lookup location, ISP, organisation and network info for any IP or domain.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">🔎 Target</span></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+          <div class="form-group">
+            <label>IP Address or Domain</label>
+            <div class="input-group">
+              <input type="text" id="recon-input" placeholder="e.g. 8.8.8.8 or google.com" onkeydown="if(event.key==='Enter')ReconTool.lookup()">
+              <button class="btn btn-primary" id="recon-btn" onclick="ReconTool.lookup()">🔍 Lookup</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn btn-sm" onclick="ReconTool.lookupOwn()">📍 My IP</button>
+            <button class="btn btn-sm" onclick="document.getElementById('recon-input').value='8.8.8.8'">Google DNS</button>
+            <button class="btn btn-sm" onclick="document.getElementById('recon-input').value='1.1.1.1'">Cloudflare</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="recon-result" class="hidden" style="animation:fadeUp .3s ease">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">📊 Recon Results</span>
+            <span id="recon-target-label" style="margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--cyan)"></span>
+          </div>
+          <div class="card-body">
+            <div id="recon-grid" class="recon-grid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ BREACH CHECKER ══ -->
+    <section class="page" id="page-breach">
+      <div class="page-header">
+        <div>
+          <div class="page-title"><span class="icon">💀</span>Data Breach Checker</div>
+          <div class="page-desc">Check if your credentials appear in known data breaches.</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Password check (free, k-anonymity) -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">🔑 Password Breach Check</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+            <p style="font-size:12px;color:var(--text-3);line-height:1.6">
+              Uses <strong style="color:var(--cyan)">k-anonymity</strong>: only the first 5 chars of your password's SHA-1 hash are sent. Your actual password never leaves your browser.
+            </p>
+            <div class="form-group">
+              <label>Password to check</label>
+              <input type="password" id="breach-pw" placeholder="Enter password…" onkeydown="if(event.key==='Enter')BreachTool.checkPassword()">
+            </div>
+            <button class="btn btn-primary" id="breach-pw-btn" onclick="BreachTool.checkPassword()">🔍 Check Password</button>
+            <div id="breach-pw-result" class="hidden"></div>
+          </div>
+        </div>
+
+        <!-- Email check (requires API key) -->
+        <div class="card">
+          <div class="card-header"><span class="card-title">📧 Email Breach Check</span></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+            <p style="font-size:12px;color:var(--text-3);line-height:1.6">
+              Requires a <strong style="color:var(--amber)">HaveIBeenPwned API key</strong> (from haveibeenpwned.com). Your key is stored locally only.
+            </p>
+            <div class="form-group">
+              <label>Email address</label>
+              <input type="email" id="breach-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')BreachTool.checkEmail()">
+            </div>
+            <div class="form-group">
+              <label>HIBP API Key <span style="color:var(--text-3);text-transform:none;font-weight:400">(saved locally)</span></label>
+              <input type="password" id="breach-apikey" placeholder="Paste API key…">
+            </div>
+            <button class="btn btn-primary" id="breach-email-btn" onclick="BreachTool.checkEmail()">🔍 Check Email</button>
+            <div id="breach-email-result" class="hidden"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ HASH GENERATOR ══ -->
+    <section class="page" id="page-hashes">
+      <div class="page-header">
+        <div>
+          <div class="page-title"><span class="icon">#</span>Hash Generator</div>
+          <div class="page-desc">Generate cryptographic hashes from any text. All computation is local.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">📝 Input</span></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+          <div class="form-group">
+            <label>Text to hash</label>
+            <textarea id="hash-input" rows="4" placeholder="Enter text to hash…" oninput="HashTool.generate()"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <div class="form-group" style="flex-direction:row;align-items:center;gap:8px;margin:0">
+              <label style="margin:0;white-space:nowrap">Encoding:</label>
+              <select id="hash-encoding" onchange="HashTool.generate()" style="width:auto;padding:5px 10px">
+                <option value="utf8">UTF-8</option>
+                <option value="hex">Hex input</option>
+              </select>
+            </div>
+            <button class="btn btn-sm" onclick="HashTool.loadFile()">📂 Hash File</button>
+            <input type="file" id="hash-file-input" class="hidden" onchange="HashTool.readFile(event)">
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="hash-results-card">
+        <div class="card-header"><span class="card-title">🔢 Hash Results</span></div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+          <div class="hash-row" id="hash-md5-row">
+            <span class="hash-algo">MD5</span>
+            <span class="hash-val mono" id="hash-md5">—</span>
+            <button class="btn btn-sm copy-btn" onclick="HashTool.copy('md5')">📋</button>
+          </div>
+          <div class="hash-row" id="hash-sha1-row">
+            <span class="hash-algo">SHA-1</span>
+            <span class="hash-val mono" id="hash-sha1">—</span>
+            <button class="btn btn-sm copy-btn" onclick="HashTool.copy('sha1')">📋</button>
+          </div>
+          <div class="hash-row">
+            <span class="hash-algo">SHA-256</span>
+            <span class="hash-val mono" id="hash-sha256">—</span>
+            <button class="btn btn-sm copy-btn" onclick="HashTool.copy('sha256')">📋</button>
+          </div>
+          <div class="hash-row">
+            <span class="hash-algo">SHA-384</span>
+            <span class="hash-val mono" id="hash-sha384">—</span>
+            <button class="btn btn-sm copy-btn" onclick="HashTool.copy('sha384')">📋</button>
+          </div>
+          <div class="hash-row">
+            <span class="hash-algo">SHA-512</span>
+            <span class="hash-val mono" id="hash-sha512">—</span>
+            <button class="btn btn-sm copy-btn" onclick="HashTool.copy('sha512')">📋</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Vault Entry Modal -->
+<div class="modal-bg" id="vault-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="vault-modal-title">Add Credential</span>
+      <span class="modal-close" onclick="VaultModal.close()">✕</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <input type="hidden" id="vault-modal-id">
+      <div class="form-group">
+        <label>Title / Service *</label>
+        <input type="text" id="vm-title" placeholder="e.g. Gmail, GitHub…">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Username / Email</label>
+          <input type="text" id="vm-username" placeholder="user@example.com">
+        </div>
+        <div class="form-group">
+          <label>URL</label>
+          <input type="url" id="vm-url" placeholder="https://…">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="input-group">
+          <input type="password" id="vm-password" placeholder="Password…" oninput="VaultModal.checkStrength()">
+          <button class="btn btn-sm" onclick="VaultModal.showHide()" id="vm-show-btn" title="Show/Hide">👁</button>
+          <button class="btn btn-sm" onclick="VaultModal.fillGen()" title="Generate">⚡</button>
+        </div>
+        <div class="strength-bar" id="vm-strength-bar" style="margin-top:6px">
+          <div class="strength-seg"></div><div class="strength-seg"></div>
+          <div class="strength-seg"></div><div class="strength-seg"></div>
+          <div class="strength-seg"></div>
+        </div>
+        <span id="vm-strength-label" class="strength-label"></span>
+      </div>
+      <div class="form-group">
+        <label>Notes</label>
+        <textarea id="vm-notes" rows="3" placeholder="Optional notes…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="VaultModal.close()">Cancel</button>
+      <button class="btn btn-primary" onclick="VaultModal.save()">💾 Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-wrap"></div>
+
+<script src="https://js.puter.com/v2/"></script>
+<script>
+/* ══════════════════════════════════════════
+   SECTION 1 — Utilities
+══════════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function Toast(msg, type='info', ms=3000) {
+  const w = $('toast-wrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  const icons = {success:'✓',error:'✕',info:'ℹ',warn:'⚠'};
+  t.textContent = `${icons[type]||''} ${msg}`;
+  w.appendChild(t);
+  setTimeout(()=>{
+    t.classList.add('out');
+    t.addEventListener('animationend',()=>t.remove(),{once:true});
+  }, ms);
+}
+
+async function copyText(text, label='') {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value=text; ta.style.position='fixed'; ta.style.left='-9999px';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    }
+    Toast(label ? `${label} copied!` : 'Copied!', 'success');
+  } catch { Toast('Copy failed','error'); }
+}
+
+function uid() { return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+
+/* ══════════════════════════════════════════
+   SECTION 2 — Stats
+══════════════════════════════════════════ */
+const Stats = {
+  get(key) { return parseInt(localStorage.getItem('cs_stat_'+key)||'0'); },
+  inc(key) {
+    const v = this.get(key)+1;
+    localStorage.setItem('cs_stat_'+key, v);
+    this.render();
+    return v;
+  },
+  render() {
+    const keys = ['phishing','recon','breach','hashes'];
+    keys.forEach(k=>{
+      const v = this.get(k);
+      const el = $('stat-'+k); if(el) el.textContent = v;
+      const b = $('badge-'+k); if(b) b.textContent = v;
+    });
+    // vault count
+    const entries = VaultData.count();
+    const sv = $('stat-passwords'); if(sv) sv.textContent = entries;
+    const bv = $('badge-passwords'); if(bv) bv.textContent = entries;
+  }
+};
+
+/* ══════════════════════════════════════════
+   SECTION 3 — Router
+══════════════════════════════════════════ */
+const Router = {
+  current: 'dashboard',
+  go(page) {
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    const pg = $('page-'+page);
+    if(pg) pg.classList.add('active');
+    const ni = document.querySelector(`.nav-item[data-page="${page}"]`);
+    if(ni) ni.classList.add('active');
+    this.current = page;
+    $('content').scrollTop = 0;
+  }
+};
+document.querySelectorAll('.nav-item').forEach(n=>{
+  n.addEventListener('click',()=>Router.go(n.dataset.page));
+});
+
+/* ══════════════════════════════════════════
+   SECTION 4 — Crypto Primitives
+══════════════════════════════════════════ */
+const CryptoUtil = {
+  async deriveKey(password, salt) {
+    const enc = new TextEncoder();
+    const km = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+    return crypto.subtle.deriveKey(
+      {name:'PBKDF2', salt, iterations:310000, hash:'SHA-256'},
+      km,
+      {name:'AES-GCM', length:256},
+      false, ['encrypt','decrypt']
+    );
+  },
+  async encrypt(key, plaintext) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const enc = await crypto.subtle.encrypt({name:'AES-GCM',iv}, key, new TextEncoder().encode(plaintext));
+    return {iv: btoa(String.fromCharCode(...iv)), data: btoa(String.fromCharCode(...new Uint8Array(enc)))};
+  },
+  async decrypt(key, iv64, data64) {
+    const iv = Uint8Array.from(atob(iv64), c=>c.charCodeAt(0));
+    const data = Uint8Array.from(atob(data64), c=>c.charCodeAt(0));
+    const dec = await crypto.subtle.decrypt({name:'AES-GCM',iv}, key, data);
+    return new TextDecoder().decode(dec);
+  },
+  async sha1hex(text) {
+    const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+  },
+  async shaHex(algo, text) {
+    const map = {'SHA-1':'SHA-1','SHA-256':'SHA-256','SHA-384':'SHA-384','SHA-512':'SHA-512'};
+    const buf = await crypto.subtle.digest(map[algo]||algo, new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+};
+
+/* ══════════════════════════════════════════
+   SECTION 5 — MD5 (pure JS)
+══════════════════════════════════════════ */
+function md5(str) {
+  function safeAdd(x,y){var l=(x&0xffff)+(y&0xffff),m=(x>>16)+(y>>16)+(l>>16);return(m<<16)|(l&0xffff)}
+  function rol(n,c){return(n<<c)|(n>>>(32-c))}
+  function cmn(q,a,b,x,s,t){return safeAdd(rol(safeAdd(safeAdd(a,q),safeAdd(x,t)),s),b)}
+  function ff(a,b,c,d,x,s,t){return cmn((b&c)|(~b&d),a,b,x,s,t)}
+  function gg(a,b,c,d,x,s,t){return cmn((b&d)|(c&~d),a,b,x,s,t)}
+  function hh(a,b,c,d,x,s,t){return cmn(b^c^d,a,b,x,s,t)}
+  function ii(a,b,c,d,x,s,t){return cmn(c^(b|~d),a,b,x,s,t)}
+  function md5cycle(x,k){
+    var a=x[0],b=x[1],c=x[2],d=x[3];
+    a=ff(a,b,c,d,k[0],7,-680876936);d=ff(d,a,b,c,k[1],12,-389564586);c=ff(c,d,a,b,k[2],17,606105819);
+    b=ff(b,c,d,a,k[3],22,-1044525330);a=ff(a,b,c,d,k[4],7,-176418897);d=ff(d,a,b,c,k[5],12,1200080426);
+    c=ff(c,d,a,b,k[6],17,-1473231341);b=ff(b,c,d,a,k[7],22,-45705983);a=ff(a,b,c,d,k[8],7,1770035416);
+    d=ff(d,a,b,c,k[9],12,-1958414417);c=ff(c,d,a,b,k[10],17,-42063);b=ff(b,c,d,a,k[11],22,-1990404162);
+    a=ff(a,b,c,d,k[12],7,1804603682);d=ff(d,a,b,c,k[13],12,-40341101);c=ff(c,d,a,b,k[14],17,-1502002290);
+    b=ff(b,c,d,a,k[15],22,1236535329);
+    a=gg(a,b,c,d,k[1],5,-165796510);d=gg(d,a,b,c,k[6],9,-1069501632);c=gg(c,d,a,b,k[11],14,643717713);
+    b=gg(b,c,d,a,k[0],20,-373897302);a=gg(a,b,c,d,k[5],5,-701558691);d=gg(d,a,b,c,k[10],9,38016083);
+    c=gg(c,d,a,b,k[15],14,-660478335);b=gg(b,c,d,a,k[4],20,-405537848);a=gg(a,b,c,d,k[9],5,568446438);
+    d=gg(d,a,b,c,k[14],9,-1019803690);c=gg(c,d,a,b,k[3],14,-187363961);b=gg(b,c,d,a,k[8],20,1163531501);
+    a=gg(a,b,c,d,k[13],5,-1444681467);d=gg(d,a,b,c,k[2],9,-51403784);c=gg(c,d,a,b,k[7],14,1735328473);
+    b=gg(b,c,d,a,k[12],20,-1926607734);
+    a=hh(a,b,c,d,k[5],4,-378558);d=hh(d,a,b,c,k[8],11,-2022574463);c=hh(c,d,a,b,k[11],16,1839030562);
+    b=hh(b,c,d,a,k[14],23,-35309556);a=hh(a,b,c,d,k[1],4,-1530992060);d=hh(d,a,b,c,k[4],11,1272893353);
+    c=hh(c,d,a,b,k[7],16,-155497632);b=hh(b,c,d,a,k[10],23,-1094730640);a=hh(a,b,c,d,k[13],4,681279174);
+    d=hh(d,a,b,c,k[0],11,-358537222);c=hh(c,d,a,b,k[3],16,-722521979);b=hh(b,c,d,a,k[6],23,76029189);
+    a=hh(a,b,c,d,k[9],4,-640364487);d=hh(d,a,b,c,k[12],11,-421815835);c=hh(c,d,a,b,k[15],16,530742520);
+    b=hh(b,c,d,a,k[2],23,-995338651);
+    a=ii(a,b,c,d,k[0],6,-198630844);d=ii(d,a,b,c,k[7],10,1126891415);c=ii(c,d,a,b,k[14],15,-1416354905);
+    b=ii(b,c,d,a,k[5],21,-57434055);a=ii(a,b,c,d,k[12],6,1700485571);d=ii(d,a,b,c,k[3],10,-1894986606);
+    c=ii(c,d,a,b,k[10],15,-1051523);b=ii(b,c,d,a,k[1],21,-2054922799);a=ii(a,b,c,d,k[8],6,1873313359);
+    d=ii(d,a,b,c,k[15],10,-30611744);c=ii(c,d,a,b,k[6],15,-1560198380);b=ii(b,c,d,a,k[13],21,1309151649);
+    a=ii(a,b,c,d,k[4],6,-145523070);d=ii(d,a,b,c,k[11],10,-1120210379);c=ii(c,d,a,b,k[2],15,718787259);
+    b=ii(b,c,d,a,k[9],21,-343485551);
+    x[0]=safeAdd(a,x[0]);x[1]=safeAdd(b,x[1]);x[2]=safeAdd(c,x[2]);x[3]=safeAdd(d,x[3]);
+  }
+  function md5blks(s){
+    var md5blks=[],i;
+    for(i=0;i<64;i+=4) md5blks[i>>2]=s.charCodeAt(i)+(s.charCodeAt(i+1)<<8)+(s.charCodeAt(i+2)<<16)+(s.charCodeAt(i+3)<<24);
+    return md5blks;
+  }
+  var m=[],i,s=unescape(encodeURIComponent(str)),l=s.length,state=[1732584193,-271733879,-1732584194,271733878];
+  for(i=64;i<=l;i+=64) md5cycle(state, md5blks(s.substring(i-64,i)));
+  s=s.substring(i-64); var tail=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+  for(i=0;i<s.length;i++) tail[i>>2]|=s.charCodeAt(i)<<((i%4)<<3);
+  tail[i>>2]|=0x80<<((i%4)<<3);
+  if(i>55){md5cycle(state,tail);for(i=0;i<16;i++) tail[i]=0;}
+  tail[14]=l*8; md5cycle(state,tail);
+  return Array.from(state).map(n=>{
+    var s='';for(var i=0;i<4;i++){s+=('0'+(n&0xff).toString(16)).slice(-2);n>>=8;}return s;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════
+   SECTION 6 — Password Strength
+══════════════════════════════════════════ */
+function passwordScore(pw) {
+  if (!pw) return {score:0, label:'', color:''};
+  let s = 0;
+  if (pw.length >= 8)  s++;
+  if (pw.length >= 12) s++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+  if (/[0-9]/.test(pw)) s++;
+  if (/[^A-Za-z0-9]/.test(pw)) s++;
+  const labels = ['','Very Weak','Weak','Fair','Strong','Very Strong'];
+  const colors = ['','var(--red)','var(--red)','var(--amber)','var(--cyan)','var(--green)'];
+  return {score:s, label:labels[s]||'', color:colors[s]||''};
+}
+function applyStrength(barId, labelId, pw) {
+  const {score,label,color} = passwordScore(pw);
+  const bar = $(barId);
+  if(bar) {
+    bar.className = `strength-bar pw-score-${score}`;
+    bar.querySelectorAll('.strength-seg').forEach(s=>s.style.background='');
+  }
+  const lbl = $(labelId);
+  if(lbl){ lbl.textContent=label; lbl.style.color=color; }
+}
+
+/* ══════════════════════════════════════════
+   SECTION 7 — Vault Data Layer
+══════════════════════════════════════════ */
+const VaultData = {
+  STORE_KEY: 'cs_vault',
+  _key: null,
+  _entries: [],
+  isLocked() { return !this._key; },
+  count() {
+    if(!this.isLocked()) return this._entries.length;
+    try { const r=JSON.parse(localStorage.getItem(this.STORE_KEY)||'null'); return r?JSON.parse(atob(r.meta||btoa('[]'))).length||0:0; } catch{return 0;}
+  },
+  async save() {
+    if(!this._key) return;
+    const json = JSON.stringify(this._entries);
+    const {iv,data} = await CryptoUtil.encrypt(this._key, json);
+    const salt64 = this._salt64;
+    localStorage.setItem(this.STORE_KEY, JSON.stringify({iv,data,salt:salt64,v:1}));
+    Stats.render();
+  },
+  async unlock(password) {
+    const raw = localStorage.getItem(this.STORE_KEY);
+    if(!raw) {
+      // New vault
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      this._salt64 = btoa(String.fromCharCode(...salt));
+      this._key = await CryptoUtil.deriveKey(password, salt);
+      this._entries = [];
+      await this.save();
+      return 'new';
+    }
+    const stored = JSON.parse(raw);
+    const salt = Uint8Array.from(atob(stored.salt), c=>c.charCodeAt(0));
+    this._salt64 = stored.salt;
+    const key = await CryptoUtil.deriveKey(password, salt);
+    try {
+      const plain = await CryptoUtil.decrypt(key, stored.iv, stored.data);
+      this._entries = JSON.parse(plain);
+      this._key = key;
+      return 'unlocked';
+    } catch {
+      throw new Error('Wrong password');
+    }
+  },
+  lock() { this._key=null; this._entries=[]; this._salt64=null; },
+  getAll() { return [...this._entries]; },
+  add(entry) { this._entries.push({...entry, id:uid(), created:Date.now(), modified:Date.now()}); },
+  update(id, entry) {
+    const i = this._entries.findIndex(e=>e.id===id);
+    if(i>=0) this._entries[i]={...this._entries[i],...entry,modified:Date.now()};
+  },
+  remove(id) { this._entries=this._entries.filter(e=>e.id!==id); },
+  find(id) { return this._entries.find(e=>e.id===id); }
+};
+
+/* ══════════════════════════════════════════
+   SECTION 8 — Vault UI
+══════════════════════════════════════════ */
+const Vault = {
+  async unlock() {
+    const pw = $('vault-master-pw').value;
+    if(!pw){ Toast('Enter a master password','warn'); return; }
+    const btn = $('vault-unlock-btn');
+    btn.disabled=true; btn.textContent='🔓 Unlocking…';
+    try {
+      const result = await VaultData.unlock(pw);
+      if(result==='new') Toast('New vault created!','success');
+      else Toast('Vault unlocked','success');
+      $('vault-lock').classList.add('hidden');
+      $('vault-open').classList.remove('hidden');
+      this.renderEntries();
+      Stats.render();
+    } catch(e) {
+      $('vault-lock-error').textContent = e.message;
+      $('vault-lock-error').classList.remove('hidden');
+      Toast('Wrong password','error');
+    } finally {
+      btn.disabled=false; btn.textContent='🔓 Unlock / Create Vault';
+    }
+  },
+  lock() {
+    VaultData.lock();
+    $('vault-master-pw').value='';
+    $('vault-lock-error').classList.add('hidden');
+    $('vault-open').classList.add('hidden');
+    $('vault-lock').classList.remove('hidden');
+    Toast('Vault locked','info');
+  },
+  renderEntries() {
+    const q = ($('vault-search')||{value:''}).value.toLowerCase();
+    const entries = VaultData.getAll().filter(e=>
+      !q || e.title?.toLowerCase().includes(q) || e.username?.toLowerCase().includes(q)
+    );
+    const wrap = $('vault-entries');
+    if(!entries.length){
+      wrap.innerHTML=`<div style="text-align:center;color:var(--text-3);padding:24px 0">
+        ${q?'No matches found.':'No entries yet. Click <strong>+ Add</strong> to get started.'}</div>`;
+      return;
+    }
+    wrap.innerHTML = entries.map(e=>`
+      <div class="vault-entry">
+        <div class="vault-icon">${siteIcon(e.title)}</div>
+        <div class="vault-info">
+          <div class="vault-title">${esc(e.title)}</div>
+          <div class="vault-username">${esc(e.username||'')}</div>
+        </div>
+        <div class="vault-actions">
+          <button class="btn btn-sm btn-icon" title="Copy password" onclick="Vault.copyPw('${e.id}')">🔑</button>
+          <button class="btn btn-sm btn-icon" title="Copy username" onclick="copyText('${esc(e.username||'')}','Username')">👤</button>
+          <button class="btn btn-sm btn-icon" title="Edit" onclick="VaultModal.openEdit('${e.id}')">✏️</button>
+          <button class="btn btn-sm btn-icon btn-danger" title="Delete" onclick="Vault.deleteEntry('${e.id}')">🗑</button>
+        </div>
+      </div>`).join('');
+  },
+  async copyPw(id) {
+    const e = VaultData.find(id);
+    if(e) await copyText(e.password, 'Password');
+  },
+  async deleteEntry(id) {
+    if(!confirm('Delete this entry?')) return;
+    VaultData.remove(id);
+    await VaultData.save();
+    this.renderEntries();
+    Toast('Entry deleted','info');
+  }
+};
+function siteIcon(title) {
+  const t=(title||'').toLowerCase();
+  if(t.includes('google')||t.includes('gmail')) return '🔵';
+  if(t.includes('github')) return '🐙';
+  if(t.includes('amazon')||t.includes('aws')) return '📦';
+  if(t.includes('facebook')||t.includes('fb')) return '📘';
+  if(t.includes('twitter')||t.includes('x.com')) return '🐦';
+  if(t.includes('bank')||t.includes('finance')) return '🏦';
+  if(t.includes('apple')) return '🍎';
+  if(t.includes('microsoft')||t.includes('azure')||t.includes('office')) return '🪟';
+  return '🔐';
+}
+
+const VaultModal = {
+  mode: 'add',
+  open(mode, id) {
+    this.mode=mode;
+    $('vault-modal-title').textContent = mode==='add' ? 'Add Credential' : 'Edit Credential';
+    $('vault-modal-id').value = id||'';
+    if(mode==='edit'&&id){
+      const e=VaultData.find(id);
+      if(e){
+        $('vm-title').value=e.title||'';
+        $('vm-username').value=e.username||'';
+        $('vm-url').value=e.url||'';
+        $('vm-password').value=e.password||'';
+        $('vm-notes').value=e.notes||'';
+        applyStrength('vm-strength-bar','vm-strength-label',e.password||'');
+      }
+    } else {
+      ['vm-title','vm-username','vm-url','vm-password','vm-notes'].forEach(id=>$(id).value='');
+    }
+    $('vault-modal').classList.add('open');
+    setTimeout(()=>$('vm-title').focus(),50);
+  },
+  openAdd(){ this.open('add') },
+  openEdit(id){ this.open('edit',id) },
+  close(){
+    $('vault-modal').classList.remove('open');
+    $('vm-password').type='password';
+    $('vm-show-btn').textContent='👁';
+  },
+  checkStrength(){ applyStrength('vm-strength-bar','vm-strength-label',$('vm-password').value) },
+  showHide(){
+    const i=$('vm-password'), b=$('vm-show-btn');
+    if(i.type==='password'){i.type='text';b.textContent='🙈'}
+    else{i.type='password';b.textContent='👁'}
+  },
+  fillGen(){
+    const pw = PasswordGen.generateValue();
+    $('vm-password').value=pw;
+    applyStrength('vm-strength-bar','vm-strength-label',pw);
+  },
+  async save(){
+    const title = $('vm-title').value.trim();
+    if(!title){ Toast('Title is required','warn'); return; }
+    const entry = {
+      title, username:$('vm-username').value.trim(),
+      url:$('vm-url').value.trim(), password:$('vm-password').value,
+      notes:$('vm-notes').value.trim()
+    };
+    if(this.mode==='add') VaultData.add(entry);
+    else VaultData.update($('vault-modal-id').value, entry);
+    await VaultData.save();
+    Vault.renderEntries();
+    this.close();
+    Toast(this.mode==='add'?'Entry added!':'Entry updated!','success');
+  }
+};
+
+/* ══════════════════════════════════════════
+   SECTION 9 — Password Generator
+══════════════════════════════════════════ */
+const PasswordGen = {
+  UPPER:'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  LOWER:'abcdefghijklmnopqrstuvwxyz',
+  NUMS:'0123456789',
+  SYMS:'!@#$%^&*()-_=+[]{}|;:,.<>?',
+  toggle(lbl) {
+    lbl.classList.toggle('active');
+    const cb=lbl.querySelector('input');
+    cb.checked=lbl.classList.contains('active');
+    this.generate();
+  },
+  getCharset() {
+    let c='';
+    document.querySelectorAll('.gen-option').forEach(l=>{
+      const cb=l.querySelector('input');
+      if(l.classList.contains('active')) {
+        if(cb.name==='upper') c+=this.UPPER;
+        if(cb.name==='lower') c+=this.LOWER;
+        if(cb.name==='nums')  c+=this.NUMS;
+        if(cb.name==='syms')  c+=this.SYMS;
+      }
+    });
+    return c||this.LOWER+this.NUMS;
+  },
+  generateValue() {
+    const cs=this.getCharset();
+    const len=parseInt($('gen-length').value||'16');
+    const arr=crypto.getRandomValues(new Uint32Array(len));
+    return Array.from(arr).map(n=>cs[n%cs.length]).join('');
+  },
+  generate() {
+    const pw=this.generateValue();
+    $('gen-output').value=pw;
+    applyStrength('gen-strength-bar','gen-strength-label',pw);
+  },
+  update() {
+    $('gen-len-label').textContent=$('gen-length').value;
+    if($('gen-output').value) this.generate();
+  },
+  copy() { copyText($('gen-output').value,'Password') }
+};
+
+/* ══════════════════════════════════════════
+   SECTION 10 — Phishing Analyser
+══════════════════════════════════════════ */
+const PhishingTool = {
+  async analyse() {
+    const email = $('phish-input').value.trim();
+    if(!email){ Toast('Paste an email first','warn'); return; }
+    const btn=$('phish-btn');
+    btn.disabled=true; btn.innerHTML='<span class="loading-spin">⟳</span> Analysing…';
+    $('phish-result').classList.add('hidden');
+    try {
+      const prompt = `You are a cybersecurity expert. Analyse this email for phishing indicators.
+Return ONLY valid JSON in this exact format:
+{
+  "risk_score": <number 0-100>,
+  "risk_level": "<LOW|MEDIUM|HIGH|CRITICAL>",
+  "explanation": "<2-3 sentence summary>",
+  "indicators": [{"text":"<finding>","severity":"<red|amber|green>","icon":"<emoji>"}],
+  "recommendations": [{"text":"<action>","icon":"<emoji>"}]
+}
+
+EMAIL TO ANALYSE:
+${email.slice(0,3000)}`;
+
+      let raw;
+      if(typeof puter!=='undefined'&&puter.ai) {
+        const resp = await puter.ai.chat(prompt);
+        raw = typeof resp==='string'?resp:(resp?.message?.content?.[0]?.text||JSON.stringify(resp));
+      } else {
+        throw new Error('Puter.js not available');
+      }
+
+      // Extract JSON
+      const match = raw.match(/\{[\s\S]*\}/);
+      if(!match) throw new Error('Invalid AI response');
+      const result = JSON.parse(match[0]);
+      this.render(result);
+      Stats.inc('phishing');
+    } catch(e) {
+      Toast('Analysis failed: '+e.message,'error');
+      console.error(e);
+    } finally {
+      btn.disabled=false; btn.innerHTML='🔍 Analyse Email';
+    }
+  },
+  render(r) {
+    const score = Math.min(100,Math.max(0,r.risk_score||0));
+    const level = r.risk_level||'LOW';
+    const levelClass = {LOW:'risk-low',MEDIUM:'risk-medium',HIGH:'risk-high',CRITICAL:'risk-critical'}[level]||'risk-low';
+    const meterColor = score<33?'var(--green)':score<66?'var(--amber)':'var(--red)';
+
+    $('phish-risk-badge').innerHTML=`<span>${score}/100</span> ${level}`;
+    $('phish-risk-badge').className='risk-badge '+levelClass;
+    $('phish-score-label').textContent=score+'/100';
+    $('phish-meter').style.width=score+'%';
+    $('phish-meter').style.background=meterColor;
+    $('phish-explanation').textContent=r.explanation||'';
+
+    $('phish-indicators').innerHTML=(r.indicators||[]).map(i=>`
+      <div class="indicator-item ${i.severity||'amber'}">
+        <span class="indicator-icon">${i.icon||'⚠️'}</span>
+        <span class="indicator-text">${esc(i.text)}</span>
+      </div>`).join('') || '<div class="indicator-item green"><span class="indicator-icon">✅</span><span class="indicator-text">No indicators found.</span></div>';
+
+    $('phish-recommendations').innerHTML=(r.recommendations||[]).map(i=>`
+      <div class="indicator-item green">
+        <span class="indicator-icon">${i.icon||'✅'}</span>
+        <span class="indicator-text">${esc(i.text)}</span>
+      </div>`).join('');
+
+    $('phish-result').classList.remove('hidden');
+    $('phish-result').style.animation='none';
+    setTimeout(()=>$('phish-result').style.animation='',10);
+  },
+  clear() {
+    $('phish-input').value='';
+    $('phish-result').classList.add('hidden');
+  },
+  loadSample() {
+    $('phish-input').value=`From: security-team@paypa1.com
+Subject: URGENT: Your account has been suspended
+Date: Mon, 28 Mar 2026 09:12:33 +0000
+
+Dear Valued Customer,
+
+We have detected suspicious activity on your PayPal account. Your account has been temporarily suspended.
+
+To restore your account immediately, please verify your information by clicking the link below:
+
+http://paypal-verify-account.suspicious-domain.tk/login?ref=12849
+
+You must complete verification within 24 HOURS or your account will be permanently closed and funds held for 180 days.
+
+Click here: http://paypal-verify-account.suspicious-domain.tk/login
+
+Best regards,
+PayPal Security Team
+PayPal Inc. 2211 North First Street
+security@paypal.com`;
+  }
+};
+
+/* ══════════════════════════════════════════
+   SECTION 11 — IP/Domain Recon
+══════════════════════════════════════════ */
+const ReconTool = {
+  async lookup() {
+    const raw = $('recon-input').value.trim();
+    if(!raw){ Toast('Enter an IP or domain','warn'); return; }
+    await this._do(raw);
+  },
+  async lookupOwn() {
+    $('recon-input').value='';
+    await this._do('');
+  },
+  async _do(target) {
+    const btn=$('recon-btn');
+    btn.disabled=true; btn.innerHTML='<span class="loading-spin">⟳</span>';
+    $('recon-result').classList.add('hidden');
+    try {
+      let ip = target;
+      // Resolve domain to IP first
+      if(target && !/^\d+\.\d+\.\d+\.\d+$/.test(target) && !target.includes(':')) {
+        const dns = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(target)}&type=A`).then(r=>r.json());
+        const a = (dns.Answer||[]).find(r=>r.type===1);
+        ip = a ? a.data : target;
+      }
+      const url = ip ? `https://ipinfo.io/${encodeURIComponent(ip)}/json` : 'https://ipinfo.io/json';
+      const data = await fetch(url).then(r=>r.json());
+      this.render(data, target||'My IP');
+      Stats.inc('recon');
+    } catch(e) {
+      Toast('Lookup failed: '+e.message,'error');
+    } finally {
+      btn.disabled=false; btn.innerHTML='🔍 Lookup';
+    }
+  },
+  render(d, target) {
+    $('recon-target-label').textContent = target;
+    const fields = [
+      {key:'IP',val:d.ip},
+      {key:'Hostname',val:d.hostname},
+      {key:'City',val:d.city},
+      {key:'Region',val:d.region},
+      {key:'Country',val:d.country},
+      {key:'Location',val:d.loc},
+      {key:'Organisation',val:d.org},
+      {key:'Timezone',val:d.timezone},
+      {key:'Postal',val:d.postal},
+    ];
+    $('recon-grid').innerHTML = fields.filter(f=>f.val).map(f=>`
+      <div class="recon-item">
+        <div class="recon-key">${esc(f.key)}</div>
+        <div class="recon-val">${esc(f.val)}</div>
+      </div>`).join('');
+    $('recon-result').classList.remove('hidden');
+  }
+};
+
+/* ══════════════════════════════════════════
+   SECTION 12 — Breach Checker
+══════════════════════════════════════════ */
+const BreachTool = {
+  async checkPassword() {
+    const pw = $('breach-pw').value;
+    if(!pw){ Toast('Enter a password','warn'); return; }
+    const btn=$('breach-pw-btn');
+    btn.disabled=true; btn.innerHTML='<span class="loading-spin">⟳</span> Checking…';
+    const res=$('breach-pw-result');
+    res.classList.add('hidden');
+    try {
+      const hash = await CryptoUtil.sha1hex(pw);
+      const prefix=hash.slice(0,5), suffix=hash.slice(5);
+      const resp = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`,{
+        headers:{'Add-Padding':'true'}
+      });
+      const text = await resp.text();
+      const found = text.split('\r\n').find(line=>line.split(':')[0]===suffix);
+      const count = found ? parseInt(found.split(':')[1]) : 0;
+      if(count>0){
+        res.innerHTML=`<div class="breach-card pwned">
+          <div class="breach-title">⚠️ Password Compromised!</div>
+          <p style="font-size:13px;color:var(--text-2)">This password has been seen <strong style="color:var(--red)">${count.toLocaleString()}</strong> times in data breaches. Do not use it.</p>
+        </div>`;
+      } else {
+        res.innerHTML=`<div class="breach-card safe">
+          <div class="breach-title">✅ Password Not Found</div>
+          <p style="font-size:13px;color:var(--text-2)">This password was not found in known breach databases. Note: This doesn't guarantee it's secure — still use a unique, strong password.</p>
+        </div>`;
+      }
+      res.classList.remove('hidden');
+      Stats.inc('breach');
+    } catch(e) {
+      Toast('Check failed: '+e.message,'error');
+    } finally {
+      btn.disabled=false; btn.innerHTML='🔍 Check Password';
+    }
+  },
+  async checkEmail() {
+    const email=$('breach-email').value.trim();
+    const key=$('breach-apikey').value.trim();
+    if(!email){ Toast('Enter an email address','warn'); return; }
+    if(!key){ Toast('HIBP API key required for email checks','warn'); return; }
+    // Save key locally
+    localStorage.setItem('cs_hibp_key', key);
+    const btn=$('breach-email-btn');
+    btn.disabled=true; btn.innerHTML='<span class="loading-spin">⟳</span> Checking…';
+    const res=$('breach-email-result');
+    res.classList.add('hidden');
+    try {
+      const resp = await fetch(`https://haveibeenpwned.com/api/v3/breachedaccount/${encodeURIComponent(email)}?truncateResponse=false`,{
+        headers:{'hibp-api-key':key,'User-Agent':'CyberShield-Toolkit'}
+      });
+      if(resp.status===401){ throw new Error('Invalid API key'); }
+      if(resp.status===404){
+        res.innerHTML=`<div class="breach-card safe">
+          <div class="breach-title">✅ No Breaches Found</div>
+          <p style="font-size:13px;color:var(--text-2)">Good news! <strong>${esc(email)}</strong> was not found in any known data breaches.</p>
+        </div>`;
+      } else if(resp.ok) {
+        const breaches = await resp.json();
+        res.innerHTML=`<div class="breach-card pwned">
+          <div class="breach-title">💀 Found in ${breaches.length} Breach${breaches.length>1?'es':''}</div>
+          <p style="font-size:13px;color:var(--text-2);margin-bottom:8px"><strong>${esc(email)}</strong> was found in the following breaches:</p>
+          <div class="breach-list">
+            ${breaches.slice(0,20).map(b=>`
+              <div class="breach-item">
+                <span class="breach-item-name">${esc(b.Name)}</span>
+                <span class="breach-date">${b.BreachDate||''}</span>
+              </div>`).join('')}
+            ${breaches.length>20?`<div class="breach-item" style="justify-content:center;color:var(--text-3)">…and ${breaches.length-20} more</div>`:''}
+          </div>
+        </div>`;
+      } else {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+      res.classList.remove('hidden');
+      Stats.inc('breach');
+    } catch(e) {
+      Toast('Check failed: '+e.message,'error');
+    } finally {
+      btn.disabled=false; btn.innerHTML='🔍 Check Email';
+    }
+  }
+};
+
+/* ══════════════════════════════════════════
+   SECTION 13 — Hash Generator
+══════════════════════════════════════════ */
+const HashTool = {
+  _current: {},
+  async generate() {
+    const text = $('hash-input').value;
+    if(!text){ ['md5','sha1','sha256','sha384','sha512'].forEach(k=>$(('hash-'+k)).textContent='—'); return; }
+    const [h1,h2,h3,h4] = await Promise.all([
+      CryptoUtil.shaHex('SHA-1',text),
+      CryptoUtil.shaHex('SHA-256',text),
+      CryptoUtil.shaHex('SHA-384',text),
+      CryptoUtil.shaHex('SHA-512',text)
+    ]);
+    const m = md5(text);
+    this._current = {md5:m,sha1:h1,sha256:h2,sha384:h3,sha512:h4};
+    $('hash-md5').textContent=m;
+    $('hash-sha1').textContent=h1;
+    $('hash-sha256').textContent=h2;
+    $('hash-sha384').textContent=h3;
+    $('hash-sha512').textContent=h4;
+    Stats.inc('hashes');
+  },
+  copy(algo) { copyText(this._current[algo]||'', algo.toUpperCase()+' hash') },
+  loadFile() { $('hash-file-input').click(); },
+  readFile(e) {
+    const file=e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=async(ev)=>{
+      $('hash-input').value=`[File: ${file.name}]`;
+      const buf=ev.target.result;
+      const arr=new Uint8Array(buf);
+      const hashBuf = async algo => {
+        const h=await crypto.subtle.digest(algo,arr);
+        return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+      };
+      const [h1,h2,h3,h4]=await Promise.all([hashBuf('SHA-1'),hashBuf('SHA-256'),hashBuf('SHA-384'),hashBuf('SHA-512')]);
+      // MD5 for files via ArrayBuffer
+      const str=Array.from(arr).map(c=>String.fromCharCode(c)).join('');
+      const m=md5(str);
+      this._current={md5:m,sha1:h1,sha256:h2,sha384:h3,sha512:h4};
+      $('hash-md5').textContent=m;
+      $('hash-sha1').textContent=h1;
+      $('hash-sha256').textContent=h2;
+      $('hash-sha384').textContent=h3;
+      $('hash-sha512').textContent=h4;
+    };
+    reader.readAsArrayBuffer(file);
+    e.target.value='';
+  }
+};
+
+/* ══════════════════════════════════════════
+   SECTION 14 — Init
+══════════════════════════════════════════ */
+function init() {
+  // Restore saved HIBP key
+  const savedKey=localStorage.getItem('cs_hibp_key');
+  if(savedKey) $('breach-apikey').value=savedKey;
+  // Init stats
+  Stats.render();
+  // Check if vault exists
+  const hasVault=!!localStorage.getItem(VaultData.STORE_KEY);
+  if(!hasVault){
+    $('vault-lock-title').textContent='Create Vault';
+    $('vault-lock-sub').textContent='Set a master password to create your encrypted vault. This password cannot be recovered if lost.';
+    $('vault-setup-confirm').classList.remove('hidden');
+  }
+  // Keyboard shortcut: Escape closes modal
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape') VaultModal.close();
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
